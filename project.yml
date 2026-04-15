@@ -1,0 +1,34 @@
+name: Thockspace
+options:
+  bundleIdPrefix: com.thockspace
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "16.4"
+
+targets:
+  Thockspace:
+    type: application
+    platform: macOS
+    sources:
+      - path: Thockspace
+        excludes:
+          - "Resources/sounds/**/*.json"
+          - "Resources/sounds/**/*.wav"
+    resources:
+      - path: Thockspace/Resources/sounds
+        buildPhase: resources
+    info:
+      path: Thockspace/Info.plist
+      properties:
+        LSUIElement: true
+        NSInputMonitoringUsageDescription: "Thockspace listens for key presses to play mechanical keyboard sounds. It never reads what you type."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.thockspace.app
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        ENABLE_HARDENED_RUNTIME: NO
