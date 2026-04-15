@@ -10,15 +10,24 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 APP_NAME="Thockspace"
 BUNDLE_DIR="$PROJECT_DIR/build/$APP_NAME.app"
 
-echo "Building $APP_NAME ($CONFIG)..."
+echo "Building $APP_NAME ($CONFIG, universal)..."
 
+BUILD_FLAGS=(--package-path "$PROJECT_DIR")
 if [ "$CONFIG" = "release" ]; then
-    swift build -c release --package-path "$PROJECT_DIR" 2>&1
-    BINARY="$PROJECT_DIR/.build/release/$APP_NAME"
-else
-    swift build --package-path "$PROJECT_DIR" 2>&1
-    BINARY="$PROJECT_DIR/.build/debug/$APP_NAME"
+    BUILD_FLAGS+=(-c release)
 fi
+
+# Build for both architectures
+swift build "${BUILD_FLAGS[@]}" --arch arm64 2>&1
+swift build "${BUILD_FLAGS[@]}" --arch x86_64 2>&1
+
+# Create universal binary
+ARM_BINARY="$PROJECT_DIR/.build/arm64-apple-macosx/$CONFIG/$APP_NAME"
+X86_BINARY="$PROJECT_DIR/.build/x86_64-apple-macosx/$CONFIG/$APP_NAME"
+BINARY="$PROJECT_DIR/.build/$APP_NAME-universal"
+
+lipo -create -output "$BINARY" "$ARM_BINARY" "$X86_BINARY"
+echo "Universal binary: $(file "$BINARY")"
 
 echo "Creating app bundle..."
 
@@ -41,6 +50,12 @@ cp -r "$PROJECT_DIR/Thockspace/Resources/sounds" "$BUNDLE_DIR/Contents/Resources
 # Create PkgInfo
 echo -n "APPL????" > "$BUNDLE_DIR/Contents/PkgInfo"
 
+# Ad-hoc sign — avoids "damaged" error, becomes "unidentified developer" instead
+# User only needs right-click → Open once
+codesign --force --deep --sign - "$BUNDLE_DIR"
+echo "Ad-hoc signed."
+
+echo ""
 echo "Bundle created at: $BUNDLE_DIR"
 echo ""
 echo "To run:"
@@ -48,3 +63,5 @@ echo "  open $BUNDLE_DIR"
 echo ""
 echo "To install:"
 echo "  cp -r $BUNDLE_DIR /Applications/"
+echo ""
+echo "First launch on another Mac: right-click → Open"
