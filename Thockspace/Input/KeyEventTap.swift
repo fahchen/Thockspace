@@ -32,7 +32,7 @@ final class KeyEventTap {
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
         }
-        if let source = runLoopSource, let thread = tapThread {
+        if let source = runLoopSource, tapThread != nil {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
         }
         eventTap = nil

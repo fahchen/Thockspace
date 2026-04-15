@@ -3,8 +3,11 @@
 
 # Xcode
 DerivedData/
-build/
 *.xcworkspace/xcuserdata/
+
+# SwiftPM
+.build/
+build/
 
 # macOS
 .DS_Store
