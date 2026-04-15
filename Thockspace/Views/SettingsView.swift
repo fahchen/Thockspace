@@ -19,30 +19,25 @@ struct SettingsView: View {
                     .font(.headline)
                 Spacer()
             }
-            .padding(.bottom, 4)
 
             Divider()
 
             // Profile picker
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Sound Profile")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker("Profile", selection: $appState.selectedProfile) {
-                    ForEach(profiles, id: \.0) { id, name in
-                        Text(name).tag(id)
-                    }
+            Picker("Sound Profile", selection: $appState.selectedProfile) {
+                ForEach(profiles, id: \.0) { id, name in
+                    Text(name).tag(id)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
             }
+            .pickerStyle(.inline)
+
+            Divider()
 
             // Volume
             VStack(alignment: .leading, spacing: 4) {
                 Text("Volume")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                HStack {
+                HStack(spacing: 8) {
                     Image(systemName: "speaker.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -86,7 +81,7 @@ struct SettingsView: View {
             .foregroundStyle(.secondary)
         }
         .padding(16)
-        .frame(width: 280)
+        .fixedSize()
     }
 }
 
@@ -106,12 +101,6 @@ struct PermissionStatusView: View {
                 }
                 .font(.caption)
                 .controlSize(.small)
-            }
-        }
-        .onAppear {
-            // Re-check periodically
-            Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
-                hasPermission = PermissionManager.hasInputMonitoringPermission()
             }
         }
     }
