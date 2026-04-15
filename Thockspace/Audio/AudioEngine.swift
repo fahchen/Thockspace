@@ -139,10 +139,15 @@ final class AudioEngine {
     private func playBuffer(_ buffer: AVAudioPCMBuffer, macKeyCode: CGKeyCode, isDown: Bool) {
         let voice = voicePool.acquire()
 
-        // Set spatial position
+        // Set spatial position with per-keystroke jitter
         if spatialAudioEnabled {
             let pos = KeyPositionMap.position(for: macKeyCode)
-            voice.playerNode.position = pos.avAudio3DPoint
+            let jitteredPoint = AVAudio3DPoint(
+                x: pos.x + Float.random(in: -0.05...0.05),
+                y: pos.y + Float.random(in: -0.03...0.03),
+                z: pos.z + Float.random(in: -0.02...0.02)
+            )
+            voice.playerNode.position = jitteredPoint
         }
 
         // Pitch jitter
