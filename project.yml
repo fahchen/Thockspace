@@ -3,7 +3,6 @@ options:
   bundleIdPrefix: com.thockspace
   deploymentTarget:
     macOS: "13.0"
-  xcodeVersion: "16.4"
 
 targets:
   Thockspace:
@@ -19,9 +18,6 @@ targets:
         buildPhase: resources
     info:
       path: Thockspace/Info.plist
-      properties:
-        LSUIElement: true
-        NSInputMonitoringUsageDescription: "Thockspace listens for key presses to play mechanical keyboard sounds. It never reads what you type."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.thockspace.app
