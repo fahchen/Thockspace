@@ -28,16 +28,12 @@ struct SoundProfile {
 enum MechvibesLoader {
     private static let monoFormat = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 1)!
 
-    static func loadProfile(named name: String) -> SoundProfile? {
-        guard let profileURL = Bundle.main.url(forResource: name, withExtension: nil, subdirectory: "sounds") else {
-            print("[Thockspace] Profile directory not found: sounds/\(name)")
-            return nil
-        }
-
-        let configURL = profileURL.appendingPathComponent("config.json")
+    /// Load a profile from an arbitrary directory URL (bundled or imported).
+    static func loadProfile(at directory: URL) -> SoundProfile? {
+        let configURL = directory.appendingPathComponent("config.json")
         guard let configData = try? Data(contentsOf: configURL),
               let config = try? JSONSerialization.jsonObject(with: configData) as? [String: Any] else {
-            print("[Thockspace] config.json not found or invalid in \(name)")
+            print("[Thockspace] config.json not found or invalid at \(directory.path)")
             return nil
         }
 
@@ -45,10 +41,50 @@ enum MechvibesLoader {
         let version = config["version"] as? Int ?? 1
 
         if defineType == "single" {
-            return loadSingleProfile(config: config, directory: profileURL)
+            return loadSingleProfile(config: config, directory: directory)
         } else {
-            return loadMultiProfile(config: config, directory: profileURL, version: version)
+            return loadMultiProfile(config: config, directory: directory, version: version)
         }
+    }
+
+    /// Read the `name` field from a pack's config.json. Used for display name.
+    static func readDisplayName(at directory: URL) -> String? {
+        let configURL = directory.appendingPathComponent("config.json")
+        guard let data = try? Data(contentsOf: configURL),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return (json["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+    }
+
+    /// Validate a candidate import directory. Returns .ok on structural success
+    /// (config.json present and parseable with a `defines` or `sound` block) or
+    /// a specific error case otherwise. Matches BDR-0018.
+    enum StructuralError: Error {
+        case notADirectory
+        case missingConfig
+        case unparseableConfig
+        case missingRequiredFields
+    }
+
+    static func validateStructure(at directory: URL) -> StructuralError? {
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDir),
+              isDir.boolValue else {
+            return .notADirectory
+        }
+        let configURL = directory.appendingPathComponent("config.json")
+        guard FileManager.default.fileExists(atPath: configURL.path) else {
+            return .missingConfig
+        }
+        guard let data = try? Data(contentsOf: configURL),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return .unparseableConfig
+        }
+        if json["sound"] == nil && json["defines"] == nil {
+            return .missingRequiredFields
+        }
+        return nil
     }
 
     // MARK: - Multi mode (v2): individual files per key

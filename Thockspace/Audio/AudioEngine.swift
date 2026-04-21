@@ -109,10 +109,10 @@ final class AudioEngine {
 
     // MARK: - Profile
 
-    func loadProfile(named name: String) {
-        currentProfile = MechvibesLoader.loadProfile(named: name)
+    func loadProfile(_ entry: PackEntry) {
+        currentProfile = MechvibesLoader.loadProfile(at: entry.directory)
         if currentProfile == nil {
-            print("[Thockspace] Warning: no profile loaded for '\(name)'")
+            print("[Thockspace] Warning: no profile loaded for '\(entry.displayName)'")
         }
     }
 

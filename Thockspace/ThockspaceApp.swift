@@ -10,5 +10,12 @@ struct ThockspaceApp: App {
                 .environmentObject(appState)
         }
         .menuBarExtraStyle(.window)
+
+        Window("Manage Packs", id: "manage-packs") {
+            ManagePacksView()
+                .environmentObject(appState)
+        }
+        .defaultSize(width: 520, height: 420)
+        .windowResizability(.contentSize)
     }
 }

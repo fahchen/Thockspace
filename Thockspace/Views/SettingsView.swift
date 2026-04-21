@@ -1,13 +1,10 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
-
-    private let profiles = [
-        ("cherry-mx-blue", "Cherry MX Blue"),
-        ("holy-panda", "Holy Panda"),
-        ("cherry-mx-red", "Cherry MX Red"),
-    ]
+    @Environment(\.openWindow) private var openWindow
+    @State private var isDropTargeted = false
 
     var body: some View {
         GlassEffectContainer(spacing: Theme.Metric.sectionSpacing) {
@@ -28,16 +25,32 @@ struct SettingsView: View {
                 PermissionStatusView()
                     .glassChip()
 
-                Button("Quit Thockspace") {
-                    NSApplication.shared.terminate(nil)
+                HStack(spacing: 8) {
+                    Button("Manage Packs…") {
+                        openWindow(id: "manage-packs")
+                    }
+                    .buttonStyle(.glass)
+
+                    Button("Quit Thockspace") {
+                        NSApplication.shared.terminate(nil)
+                    }
+                    .buttonStyle(.glass)
                 }
-                .buttonStyle(.glass)
                 .frame(maxWidth: .infinity)
             }
         }
         .glassPanel()
-        .frame(minWidth: 300)
+        .frame(minWidth: 320)
         .fixedSize(horizontal: true, vertical: true)
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: Theme.Metric.panelCorner)
+                    .strokeBorder(Theme.Accent.primary, lineWidth: 2)
+                    .padding(4)
+                    .allowsHitTesting(false)
+            }
+        }
     }
 
     // MARK: - Sections
@@ -55,16 +68,21 @@ struct SettingsView: View {
 
     private var profilePicker: some View {
         VStack(alignment: .leading, spacing: Theme.Metric.rowSpacing) {
-            Text("Sound Profile")
-                .font(.sectionLabel)
-                .foregroundStyle(.secondary)
-            ForEach(profiles, id: \.0) { id, name in
+            HStack {
+                Text("Sound Profile")
+                    .font(.sectionLabel)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("Drop folder to import")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            ForEach(appState.library.all) { entry in
                 ProfileRow(
-                    id: id,
-                    name: name,
-                    isSelected: appState.selectedProfile == id
+                    entry: entry,
+                    isSelected: appState.selectedProfile == entry.id
                 ) {
-                    appState.selectedProfile = id
+                    appState.selectedProfile = entry.id
                 }
             }
         }
@@ -109,13 +127,25 @@ struct SettingsView: View {
         .tint(appState.isMuted ? Theme.Accent.muteActive : Theme.Accent.primary)
         .controlSize(.large)
     }
+
+    // MARK: - Drop handling
+
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        guard let provider = providers.first else { return false }
+        _ = provider.loadObject(ofClass: URL.self) { url, _ in
+            guard let url else { return }
+            Task { @MainActor in
+                _ = PackImporter.importPack(from: url, library: appState.library)
+            }
+        }
+        return true
+    }
 }
 
 // MARK: - Profile row
 
 private struct ProfileRow: View {
-    let id: String
-    let name: String
+    let entry: PackEntry
     let isSelected: Bool
     let onSelect: () -> Void
 
@@ -124,9 +154,19 @@ private struct ProfileRow: View {
             HStack(spacing: 10) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isSelected ? Theme.Accent.primary : .secondary)
-                Text(name)
+                Text(entry.displayName)
                     .font(.panelBody)
                     .foregroundStyle(.primary)
+                if !entry.isBundled {
+                    Text("custom")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule().fill(.secondary.opacity(0.12))
+                        )
+                }
                 Spacer()
             }
             .contentShape(.rect)
