@@ -17,5 +17,12 @@ struct ThockspaceApp: App {
         }
         .defaultSize(width: 520, height: 420)
         .windowResizability(.contentSize)
+
+        Window("Keystroke Stats", id: "stats") {
+            StatsView()
+                .environmentObject(appState)
+        }
+        .defaultSize(width: 760, height: 520)
+        .windowResizability(.contentSize)
     }
 }

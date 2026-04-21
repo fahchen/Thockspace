@@ -26,12 +26,19 @@ struct SettingsView: View {
                     .glassChip()
 
                 HStack(spacing: 8) {
+                    Button {
+                        openWindow(id: "stats")
+                    } label: {
+                        Label("Stats", systemImage: "chart.bar.doc.horizontal")
+                    }
+                    .buttonStyle(.glass)
+
                     Button("Manage Packs…") {
                         openWindow(id: "manage-packs")
                     }
                     .buttonStyle(.glass)
 
-                    Button("Quit Thockspace") {
+                    Button("Quit") {
                         NSApplication.shared.terminate(nil)
                     }
                     .buttonStyle(.glass)

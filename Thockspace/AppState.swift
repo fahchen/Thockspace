@@ -10,6 +10,7 @@ final class AppState: ObservableObject {
     @AppStorage("isMuted") var isMuted: Bool = false
 
     let library = PackLibrary()
+    let recorder = StatsRecorder()
 
     private var audioEngine: AudioEngine?
     private var keyEventTap: KeyEventTap?
@@ -44,7 +45,17 @@ final class AppState: ObservableObject {
 
     private func setupKeyEventTap() {
         keyEventTap = KeyEventTap { [weak self] keyCode, isDown in
-            self?.audioEngine?.play(macKeyCode: keyCode, isDown: isDown)
+            guard let self else { return }
+            // Audio path (keyboard + mouse)
+            self.audioEngine?.play(macKeyCode: keyCode, isDown: isDown)
+            // Stats recording: keyDown only (BDR-0001). Mute does not gate
+            // recording (BDR-0005). Dispatch onto the main actor since
+            // StatsRecorder is @MainActor-isolated.
+            if isDown {
+                Task { @MainActor in
+                    self.recorder.recordKeyDown()
+                }
+            }
         }
         keyEventTap?.start()
     }
