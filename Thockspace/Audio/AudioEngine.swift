@@ -121,8 +121,13 @@ final class AudioEngine {
     func play(macKeyCode: CGKeyCode, isDown: Bool) {
         guard !isMuted, let profile = currentProfile else { return }
 
+        let isMouse = MouseButtonMap.isMouseCode(macKeyCode)
+        let sampleCode = isMouse
+            ? MouseButtonMap.keyboardSampleCode(forMouseCode: macKeyCode)
+            : macKeyCode
+
         // Map mac keycode → Mechvibes scancode
-        guard let scancode = KeycodeMap.scancode(for: macKeyCode) else { return }
+        guard let scancode = KeycodeMap.scancode(for: sampleCode) else { return }
 
         // Look up buffer (random selection from available variants)
         let buffer: AVAudioPCMBuffer?
@@ -133,19 +138,26 @@ final class AudioEngine {
         }
 
         guard let buf = buffer else { return }
-        playBuffer(buf, macKeyCode: macKeyCode, isDown: isDown)
+        playBuffer(buf, macKeyCode: macKeyCode, isDown: isDown, isMouse: isMouse)
     }
 
-    private func playBuffer(_ buffer: AVAudioPCMBuffer, macKeyCode: CGKeyCode, isDown: Bool) {
+    private func playBuffer(
+        _ buffer: AVAudioPCMBuffer,
+        macKeyCode: CGKeyCode,
+        isDown: Bool,
+        isMouse: Bool
+    ) {
         let voice = voicePool.acquire()
 
         // Set spatial position with per-keystroke jitter
         if spatialAudioEnabled {
-            let pos = KeyPositionMap.position(for: macKeyCode)
+            let basePos = isMouse
+                ? MouseButtonMap.spatialPosition
+                : KeyPositionMap.position(for: macKeyCode)
             let jitteredPoint = AVAudio3DPoint(
-                x: pos.x + Float.random(in: -0.05...0.05),
-                y: pos.y + Float.random(in: -0.03...0.03),
-                z: pos.z + Float.random(in: -0.02...0.02)
+                x: basePos.x + Float.random(in: -0.05...0.05),
+                y: basePos.y + Float.random(in: -0.03...0.03),
+                z: basePos.z + Float.random(in: -0.02...0.02)
             )
             voice.playerNode.position = jitteredPoint
         }
@@ -155,8 +167,9 @@ final class AudioEngine {
             ? 1.0 + Float.random(in: -0.03...0.03)
             : 1.0
 
-        // Gain: key-up typically quieter
-        let gain: Float = isDown ? 1.0 : 0.6
+        // Gain: key-up quieter; mouse runs at a fixed fraction of keyboard gain.
+        let baseGain: Float = isDown ? 1.0 : 0.6
+        let gain: Float = isMouse ? baseGain * MouseButtonMap.relativeGain : baseGain
 
         voice.play(buffer: buffer, gain: gain, pitch: pitch)
     }

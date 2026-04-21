@@ -45,6 +45,12 @@ final class KeyEventTap {
         let eventMask = (1 << CGEventType.keyDown.rawValue)
             | (1 << CGEventType.keyUp.rawValue)
             | (1 << CGEventType.flagsChanged.rawValue)
+            | (1 << CGEventType.leftMouseDown.rawValue)
+            | (1 << CGEventType.leftMouseUp.rawValue)
+            | (1 << CGEventType.rightMouseDown.rawValue)
+            | (1 << CGEventType.rightMouseUp.rawValue)
+            | (1 << CGEventType.otherMouseDown.rawValue)
+            | (1 << CGEventType.otherMouseUp.rawValue)
 
         let refcon = Unmanaged.passUnretained(self).toOpaque()
 
@@ -86,21 +92,35 @@ final class KeyEventTap {
             return
         }
 
-        let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
-
         switch type {
         case .keyDown:
-            handler(keyCode, true)
+            handler(keyCodeField(event), true)
         case .keyUp:
-            handler(keyCode, false)
+            handler(keyCodeField(event), false)
         case .flagsChanged:
             // For modifier keys, determine down/up from flags
-            let flags = event.flags
-            let isDown = isModifierDown(keyCode: keyCode, flags: flags)
-            handler(keyCode, isDown)
+            let code = keyCodeField(event)
+            let isDown = isModifierDown(keyCode: code, flags: event.flags)
+            handler(code, isDown)
+        case .leftMouseDown, .rightMouseDown, .otherMouseDown:
+            handleMouseEvent(event: event, isDown: true)
+        case .leftMouseUp, .rightMouseUp, .otherMouseUp:
+            handleMouseEvent(event: event, isDown: false)
         default:
             break
         }
+    }
+
+    private func keyCodeField(_ event: CGEvent) -> CGKeyCode {
+        CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
+    }
+
+    private func handleMouseEvent(event: CGEvent, isDown: Bool) {
+        let buttonNumber = event.getIntegerValueField(.mouseEventButtonNumber)
+        guard let code = MouseButtonMap.syntheticCode(forButtonNumber: buttonNumber) else {
+            return
+        }
+        handler(code, isDown)
     }
 
     private func isModifierDown(keyCode: CGKeyCode, flags: CGEventFlags) -> Bool {
