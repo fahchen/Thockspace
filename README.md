@@ -13,7 +13,7 @@ macOS menu bar app. Press key, hear mechanical keyboard thock. HRTF spatial audi
 
 ## Requirements
 
-- macOS 13+
+- macOS 26 Tahoe+ (uses native Liquid Glass UI)
 - Input Monitoring permission (prompted on first launch)
 - Headphones recommended for spatial audio
 
@@ -42,6 +42,7 @@ Thockspace/
   ThockspaceApp.swift           # @main, MenuBarExtra
   AppState.swift                # settings + wiring
   Views/
+    Theme.swift                  # Liquid Glass design tokens (panel/section/chip)
     SettingsView.swift           # popover UI
   Audio/
     AudioEngine.swift            # AVAudioEngine + HRTF spatial

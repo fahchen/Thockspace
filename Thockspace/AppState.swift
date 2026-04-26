@@ -1,12 +1,16 @@
 import SwiftUI
 import Combine
 
+@MainActor
 final class AppState: ObservableObject {
     @AppStorage("selectedProfile") var selectedProfile: String = "cherry-mx-blue"
     @AppStorage("masterVolume") var masterVolume: Double = 0.8
     @AppStorage("spatialAudioEnabled") var spatialAudioEnabled: Bool = true
     @AppStorage("pitchJitterEnabled") var pitchJitterEnabled: Bool = true
     @AppStorage("isMuted") var isMuted: Bool = false
+
+    let library = PackLibrary()
+    let recorder = StatsRecorder()
 
     private var audioEngine: AudioEngine?
     private var keyEventTap: KeyEventTap?
@@ -24,13 +28,34 @@ final class AppState: ObservableObject {
         audioEngine?.spatialAudioEnabled = spatialAudioEnabled
         audioEngine?.pitchJitterEnabled = pitchJitterEnabled
         audioEngine?.isMuted = isMuted
-        audioEngine?.loadProfile(named: selectedProfile)
+        reloadProfileFromStorage()
         audioEngine?.start()
+    }
+
+    private func reloadProfileFromStorage() {
+        guard let engine = audioEngine else { return }
+        if let entry = library.entry(forID: selectedProfile) {
+            engine.loadProfile(entry)
+        } else if let fallback = library.entry(forID: "cherry-mx-blue") {
+            // Stored id points to a pack that no longer exists — fall back.
+            selectedProfile = fallback.id
+            engine.loadProfile(fallback)
+        }
     }
 
     private func setupKeyEventTap() {
         keyEventTap = KeyEventTap { [weak self] keyCode, isDown in
-            self?.audioEngine?.play(macKeyCode: keyCode, isDown: isDown)
+            guard let self else { return }
+            // Audio path (keyboard + mouse)
+            self.audioEngine?.play(macKeyCode: keyCode, isDown: isDown)
+            // Stats recording: keyDown only (BDR-0001). Mute does not gate
+            // recording (BDR-0005). Dispatch onto the main actor since
+            // StatsRecorder is @MainActor-isolated.
+            if isDown {
+                Task { @MainActor in
+                    self.recorder.recordKeyDown()
+                }
+            }
         }
         keyEventTap?.start()
     }
@@ -57,7 +82,7 @@ final class AppState: ObservableObject {
 
         if selectedProfile != lastSyncedProfile {
             lastSyncedProfile = selectedProfile
-            engine.loadProfile(named: selectedProfile)
+            reloadProfileFromStorage()
         }
         if masterVolume != lastSyncedVolume {
             lastSyncedVolume = masterVolume
