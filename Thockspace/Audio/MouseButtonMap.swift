@@ -45,7 +45,7 @@ enum MouseButtonMap {
     }
 
     /// BDR-0010 fixed volume multiplier: mouse gain relative to keyboard.
-    static let relativeGain: Float = 0.70
+    static let relativeGain: Float = 0.50
 
     /// BDR-0011 fixed right-side spatial position, shared by all five
     /// mouse buttons. Same depth as KeyPositionMap so mouse and keyboard

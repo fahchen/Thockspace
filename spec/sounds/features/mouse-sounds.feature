@@ -64,17 +64,17 @@ Feature: Mouse Button Sounds
       And the user clicks the left mouse button again
       Then the sound played is the "Space" sample from profile "holy-panda"
 
-  Rule: Mouse playback gain is 70% of the current master volume
+  Rule: Mouse playback gain is half the current master volume
 
-    Scenario: Mouse clicks play at 70% of master gain
+    Scenario: Mouse clicks play at 50% of master gain
       Given the master volume is set to 1.0
       When the user clicks the left mouse button
-      Then the effective playback gain is approximately 0.70
+      Then the effective playback gain is approximately 0.50
 
     Scenario: Mouse gain scales proportionally with master volume
       Given the master volume is set to 0.5
       When the user clicks the left mouse button
-      Then the effective playback gain is approximately 0.35
+      Then the effective playback gain is approximately 0.25
 
   Rule: Global Mute silences both keyboard and mouse
 
