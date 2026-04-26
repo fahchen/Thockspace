@@ -5,10 +5,22 @@ import AppKit
 struct ThockspaceApp: App {
     @StateObject private var appState = AppState()
 
+    private static let menuBarIcon: NSImage = {
+        if let url = Bundle.main.url(forResource: "MenuBarIcon", withExtension: "svg"),
+           let image = NSImage(contentsOf: url) {
+            image.isTemplate = true
+            image.size = NSSize(width: 18, height: 18)
+            return image
+        }
+        return NSImage(systemSymbolName: "keyboard", accessibilityDescription: "Thockspace")!
+    }()
+
     var body: some Scene {
-        MenuBarExtra("Thockspace", image: "MenuBarIconTemplate") {
+        MenuBarExtra {
             SettingsView()
                 .environmentObject(appState)
+        } label: {
+            Image(nsImage: Self.menuBarIcon)
         }
         .menuBarExtraStyle(.window)
 
