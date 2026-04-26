@@ -47,6 +47,13 @@ cp "$PROJECT_DIR/Thockspace/Info.plist" "$BUNDLE_DIR/Contents/Info.plist"
 # Copy sound resources
 cp -r "$PROJECT_DIR/Thockspace/Resources/sounds" "$BUNDLE_DIR/Contents/Resources/sounds"
 
+# Copy app icon
+cp "$PROJECT_DIR/Thockspace/Resources/AppIcon.icns" "$BUNDLE_DIR/Contents/Resources/AppIcon.icns"
+
+# Copy menu bar icon (template image — "Template" suffix = auto light/dark)
+cp "$PROJECT_DIR/Thockspace/Resources/MenuBarIconTemplate.png" "$BUNDLE_DIR/Contents/Resources/MenuBarIconTemplate.png"
+cp "$PROJECT_DIR/Thockspace/Resources/MenuBarIconTemplate@2x.png" "$BUNDLE_DIR/Contents/Resources/MenuBarIconTemplate@2x.png"
+
 # Create PkgInfo
 echo -n "APPL????" > "$BUNDLE_DIR/Contents/PkgInfo"
 
