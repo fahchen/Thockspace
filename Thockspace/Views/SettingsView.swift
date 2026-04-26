@@ -1,10 +1,23 @@
 import SwiftUI
-import UniformTypeIdentifiers
+import AppKit
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.openWindow) private var openWindow
-    @State private var isDropTargeted = false
+
+    private func showWindow(id: String) {
+        openWindow(id: id)
+        // Popover buttons look "inactive" when a new key window takes focus.
+        // Activating the whole app keeps both popover and new window vibrant;
+        // promoting the named window to key makes it jump to front reliably.
+        NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.async {
+            if let win = NSApp.windows.first(where: { $0.identifier?.rawValue == id }) {
+                win.makeKeyAndOrderFront(nil)
+                win.orderFrontRegardless()
+            }
+        }
+    }
 
     var body: some View {
         GlassEffectContainer(spacing: Theme.Metric.sectionSpacing) {
@@ -12,31 +25,28 @@ struct SettingsView: View {
                 header
 
                 profilePicker
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .glassSection()
 
                 volumeRow
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .glassSection()
 
                 togglesRow
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .glassSection()
 
-                muteButton
-
                 PermissionStatusView()
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .glassChip()
 
                 HStack(spacing: 8) {
-                    Button {
-                        openWindow(id: "stats")
-                    } label: {
-                        Label("Stats", systemImage: "chart.bar.doc.horizontal")
+                    Button("Manage Packs…") {
+                        showWindow(id: "manage-packs")
                     }
                     .buttonStyle(.glass)
 
-                    Button("Manage Packs…") {
-                        openWindow(id: "manage-packs")
-                    }
-                    .buttonStyle(.glass)
+                    Spacer()
 
                     Button("Quit") {
                         NSApplication.shared.terminate(nil)
@@ -45,19 +55,10 @@ struct SettingsView: View {
                 }
                 .frame(maxWidth: .infinity)
             }
+            .frame(width: 272)
         }
         .glassPanel()
-        .frame(minWidth: 320)
-        .fixedSize(horizontal: true, vertical: true)
-        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
-        .overlay {
-            if isDropTargeted {
-                RoundedRectangle(cornerRadius: Theme.Metric.panelCorner)
-                    .strokeBorder(Theme.Accent.primary, lineWidth: 2)
-                    .padding(4)
-                    .allowsHitTesting(false)
-            }
-        }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Sections
@@ -70,20 +71,22 @@ struct SettingsView: View {
             Text("Thockspace")
                 .font(.panelTitle)
             Spacer()
+            Button {
+                showWindow(id: "stats")
+            } label: {
+                Image(systemName: "square.grid.3x3.fill")
+            }
+            .buttonStyle(.glass)
+            .controlSize(.small)
+            .help("Open Keystroke Stats")
         }
     }
 
     private var profilePicker: some View {
         VStack(alignment: .leading, spacing: Theme.Metric.rowSpacing) {
-            HStack {
-                Text("Sound Profile")
-                    .font(.sectionLabel)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("Drop folder to import")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
+            Text("Sound Profile")
+                .font(.sectionLabel)
+                .foregroundStyle(.secondary)
             ForEach(appState.library.all) { entry in
                 ProfileRow(
                     entry: entry,
@@ -97,14 +100,33 @@ struct SettingsView: View {
 
     private var volumeRow: some View {
         VStack(alignment: .leading, spacing: Theme.Metric.rowSpacing) {
-            Text("Volume")
-                .font(.sectionLabel)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 10) {
-                Image(systemName: "speaker.fill")
-                    .font(.caption)
+            HStack {
+                Text("Volume")
+                    .font(.sectionLabel)
                     .foregroundStyle(.secondary)
+                Spacer()
+                if appState.isMuted {
+                    Text("MUTED")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Theme.Accent.muteActive)
+                }
+            }
+            HStack(spacing: 10) {
+                Button {
+                    appState.isMuted.toggle()
+                } label: {
+                    Image(systemName: appState.isMuted ? "speaker.slash.fill" : "speaker.fill")
+                        .font(.body)
+                        .foregroundStyle(appState.isMuted ? Theme.Accent.muteActive : .secondary)
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(.plain)
+                .help(appState.isMuted ? "Unmute" : "Mute")
+
                 Slider(value: $appState.masterVolume, in: 0...1)
+                    .disabled(appState.isMuted)
+                    .opacity(appState.isMuted ? 0.5 : 1)
+
                 Image(systemName: "speaker.wave.3.fill")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -114,39 +136,22 @@ struct SettingsView: View {
 
     private var togglesRow: some View {
         VStack(spacing: Theme.Metric.rowSpacing) {
-            Toggle("Spatial Audio", isOn: $appState.spatialAudioEnabled)
-            Toggle("Pitch Variation", isOn: $appState.pitchJitterEnabled)
+            toggleRow("Spatial Audio", isOn: $appState.spatialAudioEnabled)
+            toggleRow("Pitch Variation", isOn: $appState.pitchJitterEnabled)
         }
         .font(.panelBody)
-        .toggleStyle(.switch)
     }
 
-    private var muteButton: some View {
-        Button(action: { appState.isMuted.toggle() }) {
-            HStack(spacing: 8) {
-                Image(systemName: appState.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                Text(appState.isMuted ? "Unmute" : "Mute")
-                    .fontWeight(.semibold)
-            }
-            .frame(maxWidth: .infinity)
+    private func toggleRow(_ label: String, isOn: Binding<Bool>) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
         }
-        .buttonStyle(.glassProminent)
-        .tint(appState.isMuted ? Theme.Accent.muteActive : Theme.Accent.primary)
-        .controlSize(.large)
     }
 
-    // MARK: - Drop handling
-
-    private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        guard let provider = providers.first else { return false }
-        _ = provider.loadObject(ofClass: URL.self) { url, _ in
-            guard let url else { return }
-            Task { @MainActor in
-                _ = PackImporter.importPack(from: url, library: appState.library)
-            }
-        }
-        return true
-    }
 }
 
 // MARK: - Profile row

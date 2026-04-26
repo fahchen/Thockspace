@@ -11,7 +11,7 @@ Deferred features and open decisions that don't warrant a full BDR.
 - **Scroll-wheel sound** — rejected for v1 (see BDR-0007). Revisit when throttling rules (distance/rate/volume taper) are designed as a standalone feature (discovered: 2026-04-21)
 - **Mouse-move sound** — rejected for v1. Would need event-rate throttling; belongs to a dedicated motion-audio feature if ever wanted (discovered: 2026-04-21)
 - **Left-handed mouse spatial placement** — rejected for v1. A "Mouse side" toggle is straightforward if demand appears (discovered: 2026-04-21)
-- **User-tunable mouse volume** — currently hard-coded at 70% of master (BDR-0010). Revisit if tuning complaints emerge (discovered: 2026-04-21)
+- **User-tunable mouse volume** — currently hard-coded at 50% of master (BDR-0010). Revisit if tuning complaints emerge (discovered: 2026-04-21)
 - **Independent Mouse Sounds toggle** — rejected for v1. Global Mute covers both. Revisit if a "keyboard on / mouse off" use case appears (discovered: 2026-04-21)
 - **Dedicated mouse sample packs** — currently mouse borrows keyboard samples (BDR-0009). Upgrade to a hybrid loader is non-breaking once assets exist (discovered: 2026-04-21)
 - **Pause recording while muted or on demand** — explicit pause control is a separate feature, not a mute side effect (see BDR-0005) (discovered: 2026-04-21)

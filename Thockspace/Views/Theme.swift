@@ -14,8 +14,10 @@ enum Theme {
     }
 
     enum Accent {
-        static let primary = Color.accentColor
-        static let muteActive = Color.red.opacity(0.85)
+        /// 墨青 — muted sumi-ink indigo. Quiet, refined, reads well on washi-toned glass.
+        static let primary = Color(red: 0.36, green: 0.45, blue: 0.52)
+        /// 朱砂 — cinnabar red, the seal-ink hue; used sparingly for mute/warning state.
+        static let muteActive = Color(red: 0.72, green: 0.32, blue: 0.28)
     }
 }
 

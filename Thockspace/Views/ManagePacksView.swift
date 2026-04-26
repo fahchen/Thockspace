@@ -1,11 +1,14 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Dedicated window for listing and removing imported sound packs.
 /// Bundled packs are not shown — they are not removable.
+/// This window is also the drop target for importing new packs.
 struct ManagePacksView: View {
     @EnvironmentObject var appState: AppState
     @State private var pendingDelete: PackEntry?
+    @State private var isDropTargeted = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Metric.sectionSpacing) {
@@ -20,12 +23,23 @@ struct ManagePacksView: View {
 
             Spacer(minLength: 0)
 
-            Text("Drag a pack folder onto the menu-bar popover to import more.")
+            Text("Drag a pack folder anywhere in this window to import.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .frame(minWidth: 460, minHeight: 320)
-        .glassPanel()
+        .padding(.top, 28)
+        .padding(.horizontal, Theme.Metric.panelPadding)
+        .padding(.bottom, Theme.Metric.panelPadding)
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: Theme.Metric.panelCorner)
+                    .strokeBorder(Theme.Accent.primary, lineWidth: 3)
+                    .padding(4)
+                    .allowsHitTesting(false)
+            }
+        }
         .confirmationDialog(
             confirmTitle,
             isPresented: Binding(
@@ -102,6 +116,17 @@ struct ManagePacksView: View {
             appState.selectedProfile = "cherry-mx-blue"
         }
         pendingDelete = nil
+    }
+
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        guard let provider = providers.first else { return false }
+        _ = provider.loadObject(ofClass: URL.self) { url, _ in
+            guard let url else { return }
+            Task { @MainActor in
+                _ = PackImporter.importPack(from: url, library: appState.library)
+            }
+        }
+        return true
     }
 }
 
